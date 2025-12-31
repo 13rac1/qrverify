@@ -30,11 +30,11 @@ func (m *mockBrokenImage) At(x, y int) color.Color {
 
 func TestVerify(t *testing.T) {
 	tests := []struct {
-		name        string
-		setupImage  func() []byte
+		name         string
+		setupImage   func() []byte
 		expectedData string
-		wantErr     bool
-		checkVerErr bool
+		wantErr      bool
+		checkVerErr  bool
 	}{
 		{
 			name: "valid QR code matches expected data",
@@ -164,10 +164,10 @@ func TestVerify(t *testing.T) {
 
 func TestDecode(t *testing.T) {
 	tests := []struct {
-		name      string
-		setupImg  func() image.Image
-		wantData  string
-		wantErr   bool
+		name     string
+		setupImg func() image.Image
+		wantData string
+		wantErr  bool
 	}{
 		{
 			name: "decode valid QR code",
