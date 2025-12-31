@@ -24,14 +24,6 @@
 //	}
 //	png, err := qrverify.Encode("data", opts)
 //
-// # Auto-Retry
-//
-// When Recovery is not explicitly set (zero value), encoding automatically
-// retries with higher error correction levels if verification fails:
-// Medium (15%) → High (25%) → Highest (30%).
-//
-// Set an explicit Recovery level to disable this behavior.
-//
 // # Verification
 //
 // All Encode functions verify the generated QR code decodes correctly.

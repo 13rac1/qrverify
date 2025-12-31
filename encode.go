@@ -7,6 +7,28 @@ import (
 	"github.com/skip2/go-qrcode"
 )
 
+// Maximum data capacity in bytes for QR Version 40 at each recovery level.
+const (
+	MaxBytesLow     = 2953 // 7% error correction
+	MaxBytesMedium  = 2331 // 15% error correction
+	MaxBytesHigh    = 1663 // 25% error correction
+	MaxBytesHighest = 1273 // 30% error correction
+)
+
+// maxBytes returns the maximum data capacity for a recovery level.
+func maxBytes(r Recovery) int {
+	switch r {
+	case Low:
+		return MaxBytesLow
+	case High:
+		return MaxBytesHigh
+	case Highest:
+		return MaxBytesHighest
+	default:
+		return MaxBytesMedium
+	}
+}
+
 // recoveryLevel maps Recovery to go-qrcode RecoveryLevel.
 func recoveryLevel(r Recovery) qrcode.RecoveryLevel {
 	switch r {
@@ -47,31 +69,26 @@ func encodeAndVerify(data string, recovery Recovery, size int) ([]byte, int, err
 // Encode generates a verified QR code PNG image.
 // Returns error if the generated code cannot be decoded back to data.
 //
-// If opts is nil or opts.Recovery is zero, starts with Medium and
-// auto-escalates (Medium -> High -> Highest) on verification failure.
-// If opts.Recovery is explicitly set, uses that level without retry.
+// If opts is nil or opts.Recovery is zero, uses Medium recovery (15%).
 func Encode(data string, opts *EncodeOptions) ([]byte, error) {
 	size := 256
-	if opts != nil && opts.Size > 0 {
-		size = opts.Size
-	}
-
-	// If explicit recovery requested, use it without retry
-	if opts != nil && opts.Recovery != 0 {
-		png, _, err := encodeAndVerify(data, opts.Recovery, size)
-		return png, err
-	}
-
-	// Auto-escalate: Medium -> High -> Highest
-	var lastErr error
-	for _, r := range []Recovery{Medium, High, Highest} {
-		png, _, err := encodeAndVerify(data, r, size)
-		if err == nil {
-			return png, nil
+	recovery := Medium
+	if opts != nil {
+		if opts.Size > 0 {
+			size = opts.Size
 		}
-		lastErr = err
+		if opts.Recovery != 0 {
+			recovery = opts.Recovery
+		}
 	}
-	return nil, fmt.Errorf("failed to encode verifiable QR code: %w", lastErr)
+
+	if len(data) > maxBytes(recovery) {
+		return nil, fmt.Errorf("data too large: %d bytes exceeds %d byte limit for %v recovery",
+			len(data), maxBytes(recovery), recovery)
+	}
+
+	png, _, err := encodeAndVerify(data, recovery, size)
+	return png, err
 }
 
 // EncodeToFile generates a verified QR code and writes it to filename.
@@ -101,43 +118,28 @@ func EncodeDetailed(data string, opts *EncodeOptions) (*Result, error) {
 		}
 	}
 
-	// If explicit recovery requested, use it without retry
-	if opts != nil && opts.Recovery != 0 {
-		png, version, err := encodeAndVerify(data, recovery, size)
-		if err != nil {
-			return nil, err
-		}
-		return &Result{
-			Image:    png,
-			Data:     data,
-			Version:  version,
-			Recovery: recovery,
-			Size:     size,
-		}, nil
+	if len(data) > maxBytes(recovery) {
+		return nil, fmt.Errorf("data too large: %d bytes exceeds %d byte limit for %v recovery",
+			len(data), maxBytes(recovery), recovery)
 	}
 
-	// Auto-escalate: Medium -> High -> Highest
-	var lastErr error
-	for _, r := range []Recovery{Medium, High, Highest} {
-		png, version, err := encodeAndVerify(data, r, size)
-		if err == nil {
-			return &Result{
-				Image:    png,
-				Data:     data,
-				Version:  version,
-				Recovery: r,
-				Size:     size,
-			}, nil
-		}
-		lastErr = err
+	png, version, err := encodeAndVerify(data, recovery, size)
+	if err != nil {
+		return nil, err
 	}
-	return nil, fmt.Errorf("failed to encode verifiable QR code: %w", lastErr)
+
+	return &Result{
+		Image:    png,
+		Data:     data,
+		Version:  version,
+		Recovery: recovery,
+		Size:     size,
+	}, nil
 }
 
 // Quick generates a verified QR code with recommended defaults:
 // - Medium recovery level (15% error correction)
 // - 256x256 pixels
-// - Auto-retry enabled
 func Quick(data string) ([]byte, error) {
 	return Encode(data, nil)
 }

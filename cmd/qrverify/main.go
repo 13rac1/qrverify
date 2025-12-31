@@ -123,12 +123,7 @@ func verifyCommand(args []string) {
 	}
 
 	if err := qrverify.Verify(qrImage, expectedData); err != nil {
-		if verr, ok := err.(*qrverify.VerificationError); ok {
-			fmt.Fprintf(os.Stderr, "Verification failed: decoded %q does not match expected %q\n",
-				verr.Decoded, verr.Original)
-		} else {
-			fmt.Fprintf(os.Stderr, "Verification failed: %v\n", err)
-		}
+		fmt.Fprintf(os.Stderr, "Verification failed: %v\n", err)
 		os.Exit(1)
 	}
 

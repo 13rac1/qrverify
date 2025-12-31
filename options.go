@@ -32,7 +32,7 @@ func (r Recovery) String() string {
 // Zero values provide sensible defaults.
 type EncodeOptions struct {
 	// Recovery specifies error correction level.
-	// Zero value uses Medium, then auto-escalates on verification failure.
+	// Zero value uses Medium.
 	Recovery Recovery
 
 	// Size is the image dimension in pixels.

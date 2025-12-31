@@ -24,7 +24,7 @@ os.WriteFile("qr.png", png, 0644)
 ## Features
 
 - **Verified output** - All generated QR codes are decoded and verified before returning
-- **Auto-retry** - Automatically escalates error correction level on verification failure
+- **Size validation** - Validates data fits within QR capacity limits before encoding
 - **Simple API** - `Quick()` for defaults, `Encode()` for options
 
 ## API

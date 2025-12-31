@@ -85,12 +85,12 @@ func TestEncodeWithOptions(t *testing.T) {
 	}
 }
 
-func TestEncodeAutoRetry(t *testing.T) {
-	// Use simple data that should work with Medium recovery
+func TestEncodeDefaultRecovery(t *testing.T) {
+	// Use simple data that should work with default Medium recovery
 	data := "test"
 	png, err := Encode(data, nil)
 	if err != nil {
-		t.Fatalf("Encode with auto-retry failed: %v", err)
+		t.Fatalf("Encode with default recovery failed: %v", err)
 	}
 
 	if len(png) == 0 {
@@ -215,9 +215,9 @@ func TestEncodeDetailedWithDefaults(t *testing.T) {
 		t.Errorf("Expected default Size=256, got %d", result.Size)
 	}
 
-	// Recovery should be one of the auto-retry levels (Medium, High, or Highest)
-	if result.Recovery != Medium && result.Recovery != High && result.Recovery != Highest {
-		t.Errorf("Expected Recovery to be Medium/High/Highest, got %v", result.Recovery)
+	// Recovery should be default Medium
+	if result.Recovery != Medium {
+		t.Errorf("Expected Recovery to be Medium, got %v", result.Recovery)
 	}
 }
 
@@ -382,10 +382,10 @@ func TestEncodeTooLarge(t *testing.T) {
 		t.Fatal("Expected error for data too large, got nil")
 	}
 
-	// Also test with auto-retry (should try all levels and still fail)
+	// Also test with default recovery (Medium)
 	_, err = Encode(largeData, nil)
 	if err == nil {
-		t.Fatal("Expected error for data too large with auto-retry, got nil")
+		t.Fatal("Expected error for data too large with default recovery, got nil")
 	}
 }
 
@@ -487,22 +487,22 @@ func TestEncodeWithAllRecoveryLevels(t *testing.T) {
 	}
 }
 
-func TestEncodeDetailedAutoRetry(t *testing.T) {
-	data := "auto retry detailed"
+func TestEncodeDetailedDefaultRecovery(t *testing.T) {
+	data := "default recovery detailed"
 
-	// Don't specify recovery to trigger auto-retry
+	// Don't specify recovery to use default Medium
 	result, err := EncodeDetailed(data, &EncodeOptions{Size: 512})
 	if err != nil {
-		t.Fatalf("EncodeDetailed with auto-retry failed: %v", err)
+		t.Fatalf("EncodeDetailed with default recovery failed: %v", err)
 	}
 
 	if result.Size != 512 {
 		t.Errorf("Expected Size=512, got %d", result.Size)
 	}
 
-	// Should have used one of the auto-retry levels
-	if result.Recovery != Medium && result.Recovery != High && result.Recovery != Highest {
-		t.Errorf("Expected Recovery to be Medium/High/Highest, got %v", result.Recovery)
+	// Should have used default Medium recovery
+	if result.Recovery != Medium {
+		t.Errorf("Expected Recovery to be Medium, got %v", result.Recovery)
 	}
 
 	if err := Verify(result.Image, data); err != nil {
