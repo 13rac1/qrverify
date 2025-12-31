@@ -267,6 +267,15 @@ func TestDecode(t *testing.T) {
 			wantData: "",
 			wantErr:  true,
 		},
+		{
+			name: "decode fails with zero dimension image",
+			setupImg: func() image.Image {
+				// Create an image with zero width
+				return image.NewRGBA(image.Rect(0, 0, 0, 100))
+			},
+			wantData: "",
+			wantErr:  true,
+		},
 	}
 
 	for _, tt := range tests {

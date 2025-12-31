@@ -744,3 +744,153 @@ func TestResultImageNotModified(t *testing.T) {
 		t.Errorf("Verification of Result.Image failed: %v", err)
 	}
 }
+
+// TestMaxBytes tests all recovery levels in maxBytes function
+func TestMaxBytes(t *testing.T) {
+	tests := []struct {
+		name     string
+		recovery Recovery
+		want     int
+	}{
+		{
+			name:     "Low recovery",
+			recovery: Low,
+			want:     MaxBytesLow,
+		},
+		{
+			name:     "Medium recovery",
+			recovery: Medium,
+			want:     MaxBytesMedium,
+		},
+		{
+			name:     "High recovery",
+			recovery: High,
+			want:     MaxBytesHigh,
+		},
+		{
+			name:     "Highest recovery",
+			recovery: Highest,
+			want:     MaxBytesHighest,
+		},
+		{
+			name:     "Invalid recovery defaults to Medium",
+			recovery: Recovery(99),
+			want:     MaxBytesMedium,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := maxBytes(tt.recovery)
+			if got != tt.want {
+				t.Errorf("maxBytes(%v) = %d, want %d", tt.recovery, got, tt.want)
+			}
+		})
+	}
+}
+
+// TestEncodeDetailedDataTooLarge tests EncodeDetailed with oversized data
+func TestEncodeDetailedDataTooLarge(t *testing.T) {
+	tests := []struct {
+		name     string
+		recovery Recovery
+		dataSize int
+	}{
+		{
+			name:     "exceeds Low recovery limit",
+			recovery: Low,
+			dataSize: MaxBytesLow + 100,
+		},
+		{
+			name:     "exceeds Medium recovery limit",
+			recovery: Medium,
+			dataSize: MaxBytesMedium + 100,
+		},
+		{
+			name:     "exceeds High recovery limit",
+			recovery: High,
+			dataSize: MaxBytesHigh + 100,
+		},
+		{
+			name:     "exceeds Highest recovery limit",
+			recovery: Highest,
+			dataSize: MaxBytesHighest + 100,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			largeData := strings.Repeat("X", tt.dataSize)
+			opts := &EncodeOptions{Recovery: tt.recovery}
+
+			_, err := EncodeDetailed(largeData, opts)
+			if err == nil {
+				t.Fatal("Expected error for oversized data, got nil")
+			}
+
+			// Verify error message mentions data too large
+			if !strings.Contains(err.Error(), "data too large") {
+				t.Errorf("Expected 'data too large' error, got: %v", err)
+			}
+		})
+	}
+}
+
+// TestEncodeEdgeCaseSizes tests encoding with edge case sizes
+func TestEncodeEdgeCaseSizes(t *testing.T) {
+	tests := []struct {
+		name string
+		size int
+	}{
+		{
+			name: "negative size handled by library",
+			size: -1,
+		},
+		{
+			name: "zero size defaults to 256",
+			size: 0,
+		},
+		{
+			name: "very small size",
+			size: 1,
+		},
+		{
+			name: "very large size",
+			size: 2048,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			data := "test"
+			opts := &EncodeOptions{Size: tt.size}
+			png, err := Encode(data, opts)
+			if err != nil {
+				t.Errorf("Unexpected error: %v", err)
+			}
+			if len(png) == 0 {
+				t.Error("Expected non-empty PNG data")
+			}
+		})
+	}
+}
+
+// TestEncodeToFileErrors tests error conditions in EncodeToFile
+func TestEncodeToFileErrors(t *testing.T) {
+	t.Run("encode error propagates", func(t *testing.T) {
+		// Use data that's too large to trigger encode error
+		largeData := strings.Repeat("X", MaxBytesLow+100)
+		tempDir := t.TempDir()
+		filename := filepath.Join(tempDir, "test.png")
+
+		err := EncodeToFile(largeData, filename, &EncodeOptions{Recovery: Low})
+		if err == nil {
+			t.Fatal("Expected error for oversized data, got nil")
+		}
+
+		// File should not have been created
+		if _, statErr := os.Stat(filename); statErr == nil {
+			t.Error("File should not exist after encode error")
+		}
+	})
+}
