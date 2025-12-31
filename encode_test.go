@@ -177,7 +177,7 @@ func TestEncodeDetailed(t *testing.T) {
 	}
 
 	// Check all Result fields
-	if result.Image == nil || len(result.Image) == 0 {
+	if len(result.Image) == 0 {
 		t.Error("Expected non-empty Image")
 	}
 

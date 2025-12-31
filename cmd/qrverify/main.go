@@ -156,11 +156,11 @@ func demoCommand(args []string) {
 		os.Exit(1)
 	}
 	tmpname := tmpfile.Name()
-	tmpfile.Close()
+	_ = tmpfile.Close()
 
 	defer func() {
 		fmt.Println("Cleaning up...")
-		os.Remove(tmpname)
+		_ = os.Remove(tmpname)
 	}()
 
 	// Encode with detailed metadata

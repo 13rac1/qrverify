@@ -57,8 +57,8 @@ func ExampleVerify() {
 
 func ExampleEncodeToFile() {
 	tmpfile, _ := os.CreateTemp("", "qr-*.png")
-	defer os.Remove(tmpfile.Name())
-	tmpfile.Close()
+	defer func() { _ = os.Remove(tmpfile.Name()) }()
+	_ = tmpfile.Close()
 
 	err := qrverify.EncodeToFile("https://example.com", tmpfile.Name(), nil)
 	if err != nil {
