@@ -1,18 +1,23 @@
 package qrverify
 
 import (
+	"bytes"
 	"fmt"
+	"image/png"
 	"os"
 
-	"github.com/skip2/go-qrcode"
+	"github.com/boombuler/barcode"
+	"github.com/boombuler/barcode/qr"
 )
 
-// Maximum data capacity in bytes for QR Version 40 at each recovery level.
+// Maximum data capacity in bytes for QR Version 40 (largest standard QR code)
+// at each error correction level. Based on binary/byte mode encoding.
+// See Recovery type for error correction percentages.
 const (
-	MaxBytesLow     = 2953 // 7% error correction
-	MaxBytesMedium  = 2331 // 15% error correction
-	MaxBytesHigh    = 1663 // 25% error correction
-	MaxBytesHighest = 1273 // 30% error correction
+	MaxBytesLow     = 2953
+	MaxBytesMedium  = 2331
+	MaxBytesHigh    = 1663
+	MaxBytesHighest = 1273
 )
 
 // maxBytes returns the maximum data capacity for a recovery level.
@@ -29,41 +34,49 @@ func maxBytes(r Recovery) int {
 	}
 }
 
-// recoveryLevel maps Recovery to go-qrcode RecoveryLevel.
-func recoveryLevel(r Recovery) qrcode.RecoveryLevel {
+// recoveryLevel maps Recovery to barcode qr.ErrorCorrectionLevel.
+func recoveryLevel(r Recovery) qr.ErrorCorrectionLevel {
 	switch r {
 	case Low:
-		return qrcode.Low
+		return qr.L
 	case High:
-		return qrcode.High
+		return qr.Q
 	case Highest:
-		return qrcode.Highest
+		return qr.H
 	default:
-		return qrcode.Medium
+		return qr.M
 	}
 }
 
 // encodeAndVerify generates a QR code and verifies it decodes correctly.
-// Returns PNG bytes, QR version, and error.
-func encodeAndVerify(data string, recovery Recovery, size int) ([]byte, int, error) {
-	// Create QR code
-	qr, err := qrcode.New(data, recoveryLevel(recovery))
+// Returns PNG bytes and error.
+func encodeAndVerify(data string, recovery Recovery, size int) ([]byte, error) {
+	level := recoveryLevel(recovery)
+
+	// Create QR code with 8-bit greyscale
+	bc, err := qr.EncodeWithColor(data, level, qr.Auto, barcode.ColorScheme8)
 	if err != nil {
-		return nil, 0, fmt.Errorf("failed to create QR code: %w", err)
+		return nil, fmt.Errorf("failed to create QR code: %w", err)
 	}
 
-	// Generate PNG
-	png, err := qr.PNG(size)
+	// Scale to size
+	bc, err = barcode.Scale(bc, size, size)
 	if err != nil {
-		return nil, 0, fmt.Errorf("failed to generate PNG: %w", err)
+		return nil, fmt.Errorf("failed to scale QR code: %w", err)
+	}
+
+	// Encode to PNG
+	var buf bytes.Buffer
+	if err := png.Encode(&buf, bc); err != nil {
+		return nil, fmt.Errorf("failed to generate PNG: %w", err)
 	}
 
 	// Verify by decoding
-	if err := Verify(png, data); err != nil {
-		return nil, 0, err
+	if err := Verify(buf.Bytes(), data); err != nil {
+		return nil, err
 	}
 
-	return png, qr.VersionNumber, nil
+	return buf.Bytes(), nil
 }
 
 // Encode generates a verified QR code PNG image.
@@ -71,24 +84,11 @@ func encodeAndVerify(data string, recovery Recovery, size int) ([]byte, int, err
 //
 // If opts is nil or opts.Recovery is zero, uses Medium recovery (15%).
 func Encode(data string, opts *EncodeOptions) ([]byte, error) {
-	size := 256
-	recovery := Medium
-	if opts != nil {
-		if opts.Size > 0 {
-			size = opts.Size
-		}
-		if opts.Recovery != 0 {
-			recovery = opts.Recovery
-		}
+	result, err := EncodeDetailed(data, opts)
+	if err != nil {
+		return nil, err
 	}
-
-	if len(data) > maxBytes(recovery) {
-		return nil, fmt.Errorf("data too large: %d bytes exceeds %d byte limit for %v recovery",
-			len(data), maxBytes(recovery), recovery)
-	}
-
-	png, _, err := encodeAndVerify(data, recovery, size)
-	return png, err
+	return result.Image, nil
 }
 
 // EncodeToFile generates a verified QR code and writes it to filename.
@@ -123,7 +123,7 @@ func EncodeDetailed(data string, opts *EncodeOptions) (*Result, error) {
 			len(data), maxBytes(recovery), recovery)
 	}
 
-	png, version, err := encodeAndVerify(data, recovery, size)
+	png, err := encodeAndVerify(data, recovery, size)
 	if err != nil {
 		return nil, err
 	}
@@ -131,15 +131,7 @@ func EncodeDetailed(data string, opts *EncodeOptions) (*Result, error) {
 	return &Result{
 		Image:    png,
 		Data:     data,
-		Version:  version,
 		Recovery: recovery,
 		Size:     size,
 	}, nil
-}
-
-// Quick generates a verified QR code with recommended defaults:
-// - Medium recovery level (15% error correction)
-// - 256x256 pixels
-func Quick(data string) ([]byte, error) {
-	return Encode(data, nil)
 }

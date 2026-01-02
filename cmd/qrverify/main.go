@@ -186,7 +186,6 @@ func demoCommand(args []string) {
 
 	fmt.Println("Verification passed!")
 	fmt.Println("QR Code Details:")
-	fmt.Printf("  Version: %d\n", result.Version)
 	fmt.Printf("  Recovery: %s\n", result.Recovery.String())
 	fmt.Printf("  Size: %dx%d\n", result.Size, result.Size)
 	fmt.Println("Done!")

@@ -14,7 +14,7 @@ go get github.com/13rac1/qrverify
 ## Quick Start
 
 ```go
-png, err := qrverify.Quick("https://example.com")
+png, err := qrverify.Encode("https://example.com", nil)
 if err != nil {
     log.Fatal(err)
 }
@@ -25,14 +25,13 @@ os.WriteFile("qr.png", png, 0644)
 
 - **Verified output** - All generated QR codes are decoded and verified before returning
 - **Size validation** - Validates data fits within QR capacity limits before encoding
-- **Simple API** - `Quick()` for defaults, `Encode()` for options
+- **Simple API** - `Encode()` with nil options for defaults, or custom options for control
 
 ## API
 
 | Function | Description |
 |----------|-------------|
-| `Quick(data)` | Generate with defaults (256px, Medium recovery) |
-| `Encode(data, opts)` | Generate with custom options |
+| `Encode(data, opts)` | Generate QR code (opts=nil for defaults: 256px, Medium recovery) |
 | `EncodeToFile(data, filename, opts)` | Generate and write to file |
 | `EncodeDetailed(data, opts)` | Generate with metadata result |
 | `Verify(png, expected)` | Verify existing QR code |

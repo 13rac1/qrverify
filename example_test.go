@@ -7,16 +7,6 @@ import (
 	"github.com/13rac1/qrverify"
 )
 
-func ExampleQuick() {
-	png, err := qrverify.Quick("https://example.com")
-	if err != nil {
-		fmt.Println("Error:", err)
-		return
-	}
-	fmt.Printf("Generated %d bytes\n", len(png))
-	// Output: Generated 427 bytes
-}
-
 func ExampleEncode() {
 	opts := &qrverify.EncodeOptions{
 		Recovery: qrverify.High,
@@ -28,7 +18,7 @@ func ExampleEncode() {
 		return
 	}
 	fmt.Printf("Generated %d byte QR code\n", len(png))
-	// Output: Generated 598 byte QR code
+	// Output: Generated 1781 byte QR code
 }
 
 func ExampleEncodeDetailed() {
@@ -37,13 +27,13 @@ func ExampleEncodeDetailed() {
 		fmt.Println("Error:", err)
 		return
 	}
-	fmt.Printf("Version: %d, Recovery: %v\n", result.Version, result.Recovery)
-	// Output: Version: 2, Recovery: Medium
+	fmt.Printf("Recovery: %v\n", result.Recovery)
+	// Output: Recovery: Medium
 }
 
 func ExampleVerify() {
 	// First create a QR code
-	png, _ := qrverify.Quick("test data")
+	png, _ := qrverify.Encode("test data", nil)
 
 	// Then verify it
 	err := qrverify.Verify(png, "test data")

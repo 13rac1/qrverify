@@ -8,8 +8,29 @@ import (
 	"image/png"
 	"testing"
 
-	"github.com/skip2/go-qrcode"
+	"github.com/boombuler/barcode"
+	"github.com/boombuler/barcode/qr"
 )
+
+// generateTestQR creates a QR code for testing using boombuler/barcode
+func generateTestQR(data string, level qr.ErrorCorrectionLevel, size int) ([]byte, error) {
+	bc, err := qr.EncodeWithColor(data, level, qr.Auto, barcode.ColorScheme8)
+	if err != nil {
+		return nil, err
+	}
+
+	bc, err = barcode.Scale(bc, size, size)
+	if err != nil {
+		return nil, err
+	}
+
+	var buf bytes.Buffer
+	if err := png.Encode(&buf, bc); err != nil {
+		return nil, err
+	}
+
+	return buf.Bytes(), nil
+}
 
 // mockBrokenImage is a custom image type with completely empty bounds
 // to trigger bitmap creation failure
@@ -39,7 +60,7 @@ func TestVerify(t *testing.T) {
 		{
 			name: "valid QR code matches expected data",
 			setupImage: func() []byte {
-				qr, err := qrcode.Encode("test data", qrcode.Medium, 256)
+				qr, err := generateTestQR("test data", qr.M, 256)
 				if err != nil {
 					t.Fatalf("failed to generate test QR: %v", err)
 				}
@@ -51,7 +72,7 @@ func TestVerify(t *testing.T) {
 		{
 			name: "valid QR code does not match expected data",
 			setupImage: func() []byte {
-				qr, err := qrcode.Encode("actual data", qrcode.Medium, 256)
+				qr, err := generateTestQR("actual data", qr.M, 256)
 				if err != nil {
 					t.Fatalf("failed to generate test QR: %v", err)
 				}
@@ -93,7 +114,7 @@ func TestVerify(t *testing.T) {
 		{
 			name: "single space matches",
 			setupImage: func() []byte {
-				qr, err := qrcode.Encode(" ", qrcode.Medium, 256)
+				qr, err := generateTestQR(" ", qr.M, 256)
 				if err != nil {
 					t.Fatalf("failed to generate test QR: %v", err)
 				}
@@ -105,7 +126,7 @@ func TestVerify(t *testing.T) {
 		{
 			name: "unicode content matches",
 			setupImage: func() []byte {
-				qr, err := qrcode.Encode("Hello 世界 🌍", qrcode.Medium, 256)
+				qr, err := generateTestQR("Hello 世界 🌍", qr.M, 256)
 				if err != nil {
 					t.Fatalf("failed to generate test QR: %v", err)
 				}
@@ -118,7 +139,7 @@ func TestVerify(t *testing.T) {
 			name: "URL data matches",
 			setupImage: func() []byte {
 				url := "https://example.com/path?query=value&other=test"
-				qr, err := qrcode.Encode(url, qrcode.Medium, 256)
+				qr, err := generateTestQR(url, qr.M, 256)
 				if err != nil {
 					t.Fatalf("failed to generate test QR: %v", err)
 				}
@@ -149,9 +170,6 @@ func TestVerify(t *testing.T) {
 					if verErr.Original != tt.expectedData {
 						t.Errorf("VerificationError.Original = %q, want %q", verErr.Original, tt.expectedData)
 					}
-					if verErr.Recovery != Medium {
-						t.Errorf("VerificationError.Recovery = %v, want Medium", verErr.Recovery)
-					}
 				}
 			} else {
 				if err != nil {
@@ -172,7 +190,7 @@ func TestDecode(t *testing.T) {
 		{
 			name: "decode valid QR code",
 			setupImg: func() image.Image {
-				qr, err := qrcode.Encode("decode test", qrcode.Medium, 256)
+				qr, err := generateTestQR("decode test", qr.M, 256)
 				if err != nil {
 					t.Fatalf("failed to generate test QR: %v", err)
 				}
@@ -202,7 +220,7 @@ func TestDecode(t *testing.T) {
 		{
 			name: "decode QR with special characters",
 			setupImg: func() image.Image {
-				qr, err := qrcode.Encode("!@#$%^&*()", qrcode.Medium, 256)
+				qr, err := generateTestQR("!@#$%^&*()", qr.M, 256)
 				if err != nil {
 					t.Fatalf("failed to generate test QR: %v", err)
 				}
@@ -218,7 +236,7 @@ func TestDecode(t *testing.T) {
 		{
 			name: "decode QR with newlines",
 			setupImg: func() image.Image {
-				qr, err := qrcode.Encode("line1\nline2\nline3", qrcode.Medium, 256)
+				qr, err := generateTestQR("line1\nline2\nline3", qr.M, 256)
 				if err != nil {
 					t.Fatalf("failed to generate test QR: %v", err)
 				}
@@ -234,7 +252,7 @@ func TestDecode(t *testing.T) {
 		{
 			name: "decode numeric QR",
 			setupImg: func() image.Image {
-				qr, err := qrcode.Encode("12345", qrcode.Medium, 256)
+				qr, err := generateTestQR("12345", qr.M, 256)
 				if err != nil {
 					t.Fatalf("failed to generate test QR: %v", err)
 				}
@@ -318,7 +336,7 @@ func TestVerify_EdgeCases(t *testing.T) {
 	})
 
 	t.Run("case sensitivity", func(t *testing.T) {
-		qr, err := qrcode.Encode("Test", qrcode.Medium, 256)
+		qr, err := generateTestQR("Test", qr.M, 256)
 		if err != nil {
 			t.Fatalf("failed to generate test QR: %v", err)
 		}
@@ -335,7 +353,7 @@ func TestVerify_EdgeCases(t *testing.T) {
 	})
 
 	t.Run("whitespace sensitivity", func(t *testing.T) {
-		qr, err := qrcode.Encode("test", qrcode.Medium, 256)
+		qr, err := generateTestQR("test", qr.M, 256)
 		if err != nil {
 			t.Fatalf("failed to generate test QR: %v", err)
 		}

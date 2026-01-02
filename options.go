@@ -1,7 +1,5 @@
 package qrverify
 
-import "image/color"
-
 // Recovery specifies QR code error correction level.
 type Recovery int
 
@@ -38,21 +36,12 @@ type EncodeOptions struct {
 	// Size is the image dimension in pixels.
 	// Zero value uses 256.
 	Size int
-
-	// ForegroundColor sets the dark modules color.
-	// Zero value uses black.
-	ForegroundColor color.Color
-
-	// BackgroundColor sets the light modules color.
-	// Zero value uses white.
-	BackgroundColor color.Color
 }
 
 // Result contains a verified QR code with metadata.
 type Result struct {
 	Image    []byte   // PNG image bytes
 	Data     string   // Verified input data
-	Version  int      // QR code version (1-40)
 	Recovery Recovery // Final recovery level used
 	Size     int      // Image dimensions in pixels
 }

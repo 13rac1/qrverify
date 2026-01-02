@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/skip2/go-qrcode"
+	"github.com/boombuler/barcode/qr"
 )
 
 func TestEncode(t *testing.T) {
@@ -185,10 +185,6 @@ func TestEncodeDetailed(t *testing.T) {
 		t.Errorf("Expected Data=%q, got %q", data, result.Data)
 	}
 
-	if result.Version < 1 || result.Version > 40 {
-		t.Errorf("Expected Version between 1-40, got %d", result.Version)
-	}
-
 	if result.Recovery != High {
 		t.Errorf("Expected Recovery=High, got %v", result.Recovery)
 	}
@@ -221,11 +217,11 @@ func TestEncodeDetailedWithDefaults(t *testing.T) {
 	}
 }
 
-func TestQuick(t *testing.T) {
-	data := "quick test"
-	png, err := Quick(data)
+func TestEncodeWithNilOptions(t *testing.T) {
+	data := "test with nil options"
+	png, err := Encode(data, nil)
 	if err != nil {
-		t.Fatalf("Quick failed: %v", err)
+		t.Fatalf("Encode with nil options failed: %v", err)
 	}
 
 	if len(png) == 0 {
@@ -317,7 +313,7 @@ func TestEdgeCases(t *testing.T) {
 		{
 			name:      "empty string",
 			data:      "",
-			wantError: true, // QR codes require at least 1 character
+			wantError: false, // New library allows empty strings
 		},
 		{
 			name:      "single character",
@@ -393,32 +389,32 @@ func TestRecoveryLevel(t *testing.T) {
 	tests := []struct {
 		name     string
 		recovery Recovery
-		want     qrcode.RecoveryLevel
+		want     qr.ErrorCorrectionLevel
 	}{
 		{
 			name:     "Low",
 			recovery: Low,
-			want:     qrcode.Low,
+			want:     qr.L,
 		},
 		{
 			name:     "Medium",
 			recovery: Medium,
-			want:     qrcode.Medium,
+			want:     qr.M,
 		},
 		{
 			name:     "High",
 			recovery: High,
-			want:     qrcode.High,
+			want:     qr.Q,
 		},
 		{
 			name:     "Highest",
 			recovery: Highest,
-			want:     qrcode.Highest,
+			want:     qr.H,
 		},
 		{
 			name:     "invalid defaults to Medium",
 			recovery: Recovery(99),
-			want:     qrcode.Medium,
+			want:     qr.M,
 		},
 	}
 
@@ -436,17 +432,13 @@ func TestEncodeAndVerify(t *testing.T) {
 	data := "test data for encodeAndVerify"
 	size := 256
 
-	png, version, err := encodeAndVerify(data, Medium, size)
+	png, err := encodeAndVerify(data, Medium, size)
 	if err != nil {
 		t.Fatalf("encodeAndVerify failed: %v", err)
 	}
 
 	if len(png) == 0 {
 		t.Fatal("Expected non-empty PNG data")
-	}
-
-	if version < 1 || version > 40 {
-		t.Errorf("Expected version between 1-40, got %d", version)
 	}
 
 	// Verify the QR code
@@ -456,10 +448,10 @@ func TestEncodeAndVerify(t *testing.T) {
 }
 
 func TestEncodeAndVerifyInvalidData(t *testing.T) {
-	// Empty string should fail
-	_, _, err := encodeAndVerify("", Medium, 256)
-	if err == nil {
-		t.Fatal("Expected error for empty data, got nil")
+	// Empty string should work with new library
+	_, err := encodeAndVerify("", Medium, 256)
+	if err != nil {
+		t.Fatalf("Unexpected error for empty data: %v", err)
 	}
 }
 
@@ -652,12 +644,12 @@ func BenchmarkEncodeWithOptions(b *testing.B) {
 	}
 }
 
-func BenchmarkQuick(b *testing.B) {
-	data := "benchmark quick test"
+func BenchmarkEncodeDefaults(b *testing.B) {
+	data := "benchmark encode with defaults"
 	for i := 0; i < b.N; i++ {
-		_, err := Quick(data)
+		_, err := Encode(data, nil)
 		if err != nil {
-			b.Fatalf("Quick failed: %v", err)
+			b.Fatalf("Encode failed: %v", err)
 		}
 	}
 }
@@ -839,24 +831,34 @@ func TestEncodeDetailedDataTooLarge(t *testing.T) {
 // TestEncodeEdgeCaseSizes tests encoding with edge case sizes
 func TestEncodeEdgeCaseSizes(t *testing.T) {
 	tests := []struct {
-		name string
-		size int
+		name    string
+		size    int
+		wantErr bool
 	}{
 		{
-			name: "negative size handled by library",
-			size: -1,
+			name:    "negative size handled by library",
+			size:    -1,
+			wantErr: false, // Barcode library handles negative sizes gracefully
 		},
 		{
-			name: "zero size defaults to 256",
-			size: 0,
+			name:    "zero size defaults to 256",
+			size:    0,
+			wantErr: false,
 		},
 		{
-			name: "very small size",
-			size: 1,
+			name:    "very small size",
+			size:    1,
+			wantErr: true, // Barcode library requires minimum 21x21
 		},
 		{
-			name: "very large size",
-			size: 2048,
+			name:    "minimum valid size",
+			size:    21,
+			wantErr: false,
+		},
+		{
+			name:    "very large size",
+			size:    2048,
+			wantErr: false,
 		},
 	}
 
@@ -865,6 +867,12 @@ func TestEncodeEdgeCaseSizes(t *testing.T) {
 			data := "test"
 			opts := &EncodeOptions{Size: tt.size}
 			png, err := Encode(data, opts)
+			if tt.wantErr {
+				if err == nil {
+					t.Error("Expected error for invalid size, got nil")
+				}
+				return
+			}
 			if err != nil {
 				t.Errorf("Unexpected error: %v", err)
 			}

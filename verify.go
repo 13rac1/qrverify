@@ -45,7 +45,7 @@ func Verify(qrImage []byte, expectedData string) error {
 	// Decode QR
 	decoded, err := decode(img)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to read QR code: %w", err)
 	}
 
 	// Strict byte-for-byte comparison
@@ -53,7 +53,6 @@ func Verify(qrImage []byte, expectedData string) error {
 		return &VerificationError{
 			Original: expectedData,
 			Decoded:  decoded,
-			Recovery: Medium, // Default, actual recovery unknown for external images
 		}
 	}
 

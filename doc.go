@@ -1,14 +1,14 @@
 // Package qrverify provides verified QR code generation.
 //
-// It wraps go-qrcode (encoding) and gozxing (decoding) to guarantee
-// that every generated QR code can be successfully decoded back to
-// the original input data.
+// It wraps github.com/boombuler/barcode (encoding) and
+// github.com/makiuchi-d/gozxing (decoding) to guarantee that every
+// generated QR code can be successfully decoded back to the original input data.
 //
 // # Quick Start
 //
 // Generate a verified QR code with sensible defaults:
 //
-//	png, err := qrverify.Quick("https://example.com")
+//	png, err := qrverify.Encode("https://example.com", nil)
 //	if err != nil {
 //	    log.Fatal(err)
 //	}
