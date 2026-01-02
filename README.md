@@ -27,6 +27,10 @@ os.WriteFile("qr.png", png, 0644)
 - **Size validation** - Validates data fits within QR capacity limits before encoding
 - **Simple API** - `Encode()` with nil options for defaults, or custom options for control
 
+## Implementation
+
+The encoder and decoder libraries were selected based on performance and accuracy benchmarks from [qr-benchmarks](https://13rac1.github.io/qr-benchmarks/).
+
 ## API
 
 | Function | Description |
