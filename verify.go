@@ -11,7 +11,7 @@ import (
 )
 
 // decode reads a QR code from an image. Internal use only.
-// Always uses TRY_HARDER hint for maximum accuracy.
+// Uses TRY_HARDER and PURE_BARCODE hints for maximum accuracy.
 func decode(img image.Image) (string, error) {
 	// Convert image to BinaryBitmap
 	bmp, err := gozxing.NewBinaryBitmapFromImage(img)
@@ -22,6 +22,7 @@ func decode(img image.Image) (string, error) {
 	// Set up hints with TRY_HARDER
 	hints := make(map[gozxing.DecodeHintType]interface{})
 	hints[gozxing.DecodeHintType_TRY_HARDER] = true
+	hints[gozxing.DecodeHintType_PURE_BARCODE] = true
 
 	// Decode
 	reader := qrcode.NewQRCodeReader()
