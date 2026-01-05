@@ -24,6 +24,13 @@
 //	}
 //	png, err := qrverify.Encode("data", opts)
 //
+// # Decoding
+//
+// Decode QR codes from images:
+//
+//	img, _ := png.Decode(file)
+//	data, err := qrverify.Decode(img)
+//
 // # Verification
 //
 // All Encode functions verify the generated QR code decodes correctly.

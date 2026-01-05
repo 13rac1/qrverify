@@ -10,6 +10,12 @@ import (
 	"github.com/makiuchi-d/gozxing/qrcode"
 )
 
+// Decode decodes a QR code from an image and returns the data.
+// Uses TRY_HARDER and PURE_BARCODE hints for maximum accuracy.
+func Decode(img image.Image) (string, error) {
+	return decode(img)
+}
+
 // decode reads a QR code from an image. Internal use only.
 // Uses TRY_HARDER and PURE_BARCODE hints for maximum accuracy.
 func decode(img image.Image) (string, error) {

@@ -38,6 +38,7 @@ The encoder and decoder libraries were selected based on performance and accurac
 | `Encode(data, opts)` | Generate QR code (opts=nil for defaults: 256px, Medium recovery) |
 | `EncodeToFile(data, filename, opts)` | Generate and write to file |
 | `EncodeDetailed(data, opts)` | Generate with metadata result |
+| `Decode(img)` | Decode QR code from image |
 | `Verify(png, expected)` | Verify existing QR code |
 
 ## CLI

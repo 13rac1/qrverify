@@ -1,7 +1,9 @@
 package qrverify_test
 
 import (
+	"bytes"
 	"fmt"
+	"image/png"
 	"os"
 
 	"github.com/13rac1/qrverify"
@@ -29,6 +31,23 @@ func ExampleEncodeDetailed() {
 	}
 	fmt.Printf("Recovery: %v\n", result.Recovery)
 	// Output: Recovery: Medium
+}
+
+func ExampleDecode() {
+	// First create a QR code
+	pngBytes, _ := qrverify.Encode("Hello, World!", nil)
+
+	// Decode the PNG to an image
+	img, _ := png.Decode(bytes.NewReader(pngBytes))
+
+	// Decode the QR code
+	data, err := qrverify.Decode(img)
+	if err != nil {
+		fmt.Println("Error:", err)
+		return
+	}
+	fmt.Println(data)
+	// Output: Hello, World!
 }
 
 func ExampleVerify() {
